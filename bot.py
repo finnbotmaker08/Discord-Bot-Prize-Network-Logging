@@ -55,9 +55,10 @@ LOG_CHANNEL_IDS = {
     "kanaal": 1553860275675992064
 }
 
-# Geheugen voor het telsysteem en anti-dubbel loggen
+# Geheugen voor het telsysteem en anti-dubbel verwerking
 COUNTING_DATA = {COUNTING_CHANNEL_ID: {'current': 0, 'last_user': None}}
 PROCESSED_MESSAGES = set()
+MESSAGE_LOCK = asyncio.Lock()
 
 async def get_log_channel(guild: discord.Guild, name: str) -> discord.TextChannel | None:
     channel_id = LOG_CHANNEL_IDS.get(name)
@@ -88,7 +89,7 @@ class ModerationActionView(discord.ui.View):
         super().__init__(timeout=None)
         self.target_member_id = target_member_id
 
-    @discord.ui.button(label="Ban User", style=discord.ButtonStyle.danger, emoji="🔨", custom_id="mod_ban_btn_v14")
+    @discord.ui.button(label="Ban User", style=discord.ButtonStyle.danger, emoji="🔨", custom_id="mod_ban_btn_v16")
     async def ban_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.ban_members:
@@ -109,7 +110,7 @@ class ModerationActionView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout bij bannen: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Kick User", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="mod_kick_btn_v14")
+    @discord.ui.button(label="Kick User", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="mod_kick_btn_v16")
     async def kick_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.kick_members:
@@ -129,7 +130,7 @@ class ModerationActionView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout bij kicken: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Untimeout User", style=discord.ButtonStyle.success, emoji="🔊", custom_id="mod_untimeout_btn_v14")
+    @discord.ui.button(label="Untimeout User", style=discord.ButtonStyle.success, emoji="🔊", custom_id="mod_untimeout_btn_v16")
     async def untimeout_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.moderate_members:
@@ -230,7 +231,7 @@ class VerificationView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Verifiëren", style=discord.ButtonStyle.success, emoji="🔒", custom_id="verify_btn_antiraid_v14")
+    @discord.ui.button(label="Verifiëren", style=discord.ButtonStyle.success, emoji="🔒", custom_id="verify_btn_antiraid_v16")
     async def verify_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(VerificationModal(target_word=random.choice(VERIFICATION_WORDS)))
 
@@ -244,7 +245,7 @@ class TicketControlView(discord.ui.View):
         self.opener = opener
         self.claimed_by = None
 
-    @discord.ui.button(label="Claim Ticket", style=discord.ButtonStyle.primary, emoji="📌", custom_id="ticket_claim_antiraid_v14")
+    @discord.ui.button(label="Claim Ticket", style=discord.ButtonStyle.primary, emoji="📌", custom_id="ticket_claim_antiraid_v16")
     async def claim_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
@@ -272,7 +273,7 @@ class TicketControlView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Sluit Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket_close_antiraid_v14")
+    @discord.ui.button(label="Sluit Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket_close_antiraid_v16")
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
@@ -355,19 +356,19 @@ class TicketCreateView(discord.ui.View):
         await ticket_channel.send(content=staff_role.mention if staff_role else "", embed=embed, view=TicketControlView(opener=member))
         await interaction.followup.send(f"✅ Ticket aangemaakt: {ticket_channel.mention}", ephemeral=True)
 
-    @discord.ui.button(label="Support", style=discord.ButtonStyle.primary, emoji="🛠️", custom_id="btn_support_antiraid_v14")
+    @discord.ui.button(label="Support", style=discord.ButtonStyle.primary, emoji="🛠️", custom_id="btn_support_antiraid_v16")
     async def support(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Support")
 
-    @discord.ui.button(label="Marketing", style=discord.ButtonStyle.primary, emoji="📈", custom_id="btn_marketing_antiraid_v14")
+    @discord.ui.button(label="Marketing", style=discord.ButtonStyle.primary, emoji="📈", custom_id="btn_marketing_antiraid_v16")
     async def marketing(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Marketing")
 
-    @discord.ui.button(label="Management+", style=discord.ButtonStyle.primary, emoji="👑", custom_id="btn_management_antiraid_v14")
+    @discord.ui.button(label="Management+", style=discord.ButtonStyle.primary, emoji="👑", custom_id="btn_management_antiraid_v16")
     async def management(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Management+")
 
-    @discord.ui.button(label="Giveaway Claim", style=discord.ButtonStyle.success, emoji="🎉", custom_id="btn_giveaway_antiraid_v14")
+    @discord.ui.button(label="Giveaway Claim", style=discord.ButtonStyle.success, emoji="🎉", custom_id="btn_giveaway_antiraid_v16")
     async def giveaway(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Giveaway Claim")
 
@@ -438,11 +439,11 @@ async def telkanalsetup(interaction: discord.Interaction):
     embed = discord.Embed(
         title="🔢 Welkom bij het Telsysteem!",
         description="Laten we samen zo ver mogelijk komen! Hier zijn de regels:\n\n"
-                    "• Typ om de beurt het volgende getal (1, 2, 3, 4...).\n"
-                    "• Je mag **niet** twee keer achter elkaar hetzelfde getal sturen of twee keer achter elkaar tellen.\n"
-                    "• Bij een goed getal krijg je een ✅.\n"
-                    "• Bij een fout getal of dubbel getal wordt de teller direct **gereset naar 1**!\n"
-                    "• Let op: Als je echte tekst typt (chatten in plaats van getallen), krijg je een **mute van 5 minuten**!\n\n"
+                    "• Typ om de beurt het volgende getal (1, 2, 3, 4...).<br>"
+                    "• Je mag **niet** twee keer achter elkaar hetzelfde getal sturen of twee keer achter elkaar tellen.<br>"
+                    "• Bij een goed getal krijg je een ✅.<br>"
+                    "• Bij een fout getal of dubbel getal wordt de teller direct **gereset naar 1**!<br>"
+                    "• Let op: Als je echte tekst typt (chatten in plaats van getallen), krijg je een **mute van 5 minuten**!<br><br>"
                     "Veel succes!",
         color=discord.Color.from_rgb(241, 196, 15)
     )
@@ -464,12 +465,13 @@ async def on_message(message: discord.Message):
     if message.author.bot or not message.guild:
         return
 
-    # Voorkom dubbele verwerking van hetzelfde bericht
-    if message.id in PROCESSED_MESSAGES:
-        return
-    PROCESSED_MESSAGES.add(message.id)
-    if len(PROCESSED_MESSAGES) > 500:
-        PROCESSED_MESSAGES.pop()
+    # Garandeer 100% verwerking door middel van een lock
+    async with MESSAGE_LOCK:
+        if message.id in PROCESSED_MESSAGES:
+            return
+        PROCESSED_MESSAGES.add(message.id)
+        if len(PROCESSED_MESSAGES) > 500:
+            PROCESSED_MESSAGES.pop()
 
     # 1. TELSYSTEEM (Volledig geïsoleerd)
     if message.channel.id == COUNTING_CHANNEL_ID:
