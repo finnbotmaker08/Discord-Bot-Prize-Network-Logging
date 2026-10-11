@@ -76,7 +76,7 @@ class VerificationModerationView(discord.ui.View):
         super().__init__(timeout=None)
         self.target_member_id = target_member_id
 
-    @discord.ui.button(label="Ban User", style=discord.ButtonStyle.danger, emoji="🔨", custom_id="verify_ban_btn_fixed_v2")
+    @discord.ui.button(label="Ban User", style=discord.ButtonStyle.danger, emoji="🔨", custom_id="verify_ban_btn_fixed_v3")
     async def ban_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not interaction.user.guild_permissions.ban_members:
@@ -97,7 +97,7 @@ class VerificationModerationView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout bij bannen: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Kick User", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="verify_kick_btn_fixed_v2")
+    @discord.ui.button(label="Kick User", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="verify_kick_btn_fixed_v3")
     async def kick_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not interaction.user.guild_permissions.kick_members:
@@ -185,7 +185,7 @@ class VerificationView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Verifiëren", style=discord.ButtonStyle.success, emoji="🔒", custom_id="verify_button_persistent_fixed_v2")
+    @discord.ui.button(label="Verifiëren", style=discord.ButtonStyle.success, emoji="🔒", custom_id="verify_button_persistent_fixed_v3")
     async def verify_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(VerificationModal(target_word=random.choice(VERIFICATION_WORDS)))
 
@@ -199,7 +199,7 @@ class TicketControlView(discord.ui.View):
         self.opener = opener
         self.claimed_by = None
 
-    @discord.ui.button(label="Claim Ticket", style=discord.ButtonStyle.primary, emoji="📌", custom_id="ticket_claim_btn_fixed_v2")
+    @discord.ui.button(label="Claim Ticket", style=discord.ButtonStyle.primary, emoji="📌", custom_id="ticket_claim_btn_fixed_v3")
     async def claim_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
@@ -227,7 +227,7 @@ class TicketControlView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Sluit Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket_close_btn_fixed_v2")
+    @discord.ui.button(label="Sluit Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket_close_btn_fixed_v3")
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
@@ -310,19 +310,19 @@ class TicketCreateView(discord.ui.View):
         await ticket_channel.send(content=staff_role.mention if staff_role else "", embed=embed, view=TicketControlView(opener=member))
         await interaction.followup.send(f"✅ Ticket aangemaakt: {ticket_channel.mention}", ephemeral=True)
 
-    @discord.ui.button(label="Support", style=discord.ButtonStyle.primary, emoji="🛠️", custom_id="btn_support_fixed_v2")
+    @discord.ui.button(label="Support", style=discord.ButtonStyle.primary, emoji="🛠️", custom_id="btn_support_fixed_v3")
     async def support(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Support")
 
-    @discord.ui.button(label="Marketing", style=discord.ButtonStyle.primary, emoji="📈", custom_id="btn_marketing_fixed_v2")
+    @discord.ui.button(label="Marketing", style=discord.ButtonStyle.primary, emoji="📈", custom_id="btn_marketing_fixed_v3")
     async def marketing(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Marketing")
 
-    @discord.ui.button(label="Management+", style=discord.ButtonStyle.primary, emoji="👑", custom_id="btn_management_fixed_v2")
+    @discord.ui.button(label="Management+", style=discord.ButtonStyle.primary, emoji="👑", custom_id="btn_management_fixed_v3")
     async def management(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Management+")
 
-    @discord.ui.button(label="Giveaway Claim", style=discord.ButtonStyle.success, emoji="🎉", custom_id="btn_giveaway_fixed_v2")
+    @discord.ui.button(label="Giveaway Claim", style=discord.ButtonStyle.success, emoji="🎉", custom_id="btn_giveaway_fixed_v3")
     async def giveaway(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Giveaway Claim")
 
