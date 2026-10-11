@@ -80,6 +80,13 @@ def has_admin_permissions(member: discord.Member) -> bool:
         return True
     return False
 
+def is_staff_member(member: discord.Member) -> bool:
+    """Controleert of een gebruiker staff is (via ticket rollen, admin of speciale rollen)."""
+    allowed_roles = list(TICKET_ROLE_MAPPING.values())
+    if any(r.id in allowed_roles for r in member.roles):
+        return True
+    return has_admin_permissions(member)
+
 
 # ==========================================
 # MODERATIE VIEW (Met Ban, Kick & Untimeout)
@@ -89,7 +96,7 @@ class ModerationActionView(discord.ui.View):
         super().__init__(timeout=None)
         self.target_member_id = target_member_id
 
-    @discord.ui.button(label="Ban User", style=discord.ButtonStyle.danger, emoji="🔨", custom_id="mod_ban_btn_v16")
+    @discord.ui.button(label="Ban User", style=discord.ButtonStyle.danger, emoji="🔨", custom_id="mod_ban_btn_v17")
     async def ban_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.ban_members:
@@ -110,7 +117,7 @@ class ModerationActionView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout bij bannen: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Kick User", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="mod_kick_btn_v16")
+    @discord.ui.button(label="Kick User", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="mod_kick_btn_v17")
     async def kick_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.kick_members:
@@ -130,7 +137,7 @@ class ModerationActionView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout bij kicken: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Untimeout User", style=discord.ButtonStyle.success, emoji="🔊", custom_id="mod_untimeout_btn_v16")
+    @discord.ui.button(label="Untimeout User", style=discord.ButtonStyle.success, emoji="🔊", custom_id="mod_untimeout_btn_v17")
     async def untimeout_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.moderate_members:
@@ -231,13 +238,13 @@ class VerificationView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Verifiëren", style=discord.ButtonStyle.success, emoji="🔒", custom_id="verify_btn_antiraid_v16")
+    @discord.ui.button(label="Verifiëren", style=discord.ButtonStyle.success, emoji="🔒", custom_id="verify_btn_antiraid_v17")
     async def verify_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(VerificationModal(target_word=random.choice(VERIFICATION_WORDS)))
 
 
 # ==========================================
-# TICKET SYSTEEM
+# TICKET SYSTEEM (Alleen staff kan sluiten)
 # ==========================================
 class TicketControlView(discord.ui.View):
     def __init__(self, opener: discord.Member):
@@ -245,20 +252,19 @@ class TicketControlView(discord.ui.View):
         self.opener = opener
         self.claimed_by = None
 
-    @discord.ui.button(label="Claim Ticket", style=discord.ButtonStyle.primary, emoji="📌", custom_id="ticket_claim_antiraid_v16")
+    @discord.ui.button(label="Claim Ticket", style=discord.ButtonStyle.primary, emoji="📌", custom_id="ticket_claim_antiraid_v17")
     async def claim_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
         channel = interaction.channel
         staff_member = interaction.user
 
-        allowed_roles = list(TICKET_ROLE_MAPPING.values())
-        is_staff = any(r.id in allowed_roles for r in staff_member.roles) or has_admin_permissions(staff_member)
-        if not is_staff:
+        if not is_staff_member(staff_member):
             await interaction.followup.send("❌ Alleen medewerkers kunnen dit claimen.", ephemeral=True)
             return
 
         self.claimed_by = staff_member
+        allowed_roles = list(TICKET_ROLE_MAPPING.values())
         try:
             for role_id in allowed_roles:
                 role = guild.get_role(role_id)
@@ -273,12 +279,18 @@ class TicketControlView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Sluit Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket_close_antiraid_v16")
+    @discord.ui.button(label="Sluit Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket_close_antiraid_v17")
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
+        closer = interaction.user
+
+        # Controle of de gebruiker staff is (ticketmakers mogen niet sluiten)
+        if not is_staff_member(closer):
+            await interaction.followup.send("❌ Alleen medewerkers mogen dit ticket sluiten.", ephemeral=True)
+            return
+
         guild = interaction.guild
         channel = interaction.channel
-        closer = interaction.user
 
         await interaction.followup.send("⚠️ Transcript wordt gemaakt, kanaal sluit over 5 seconden...", ephemeral=False)
 
@@ -356,19 +368,19 @@ class TicketCreateView(discord.ui.View):
         await ticket_channel.send(content=staff_role.mention if staff_role else "", embed=embed, view=TicketControlView(opener=member))
         await interaction.followup.send(f"✅ Ticket aangemaakt: {ticket_channel.mention}", ephemeral=True)
 
-    @discord.ui.button(label="Support", style=discord.ButtonStyle.primary, emoji="🛠️", custom_id="btn_support_antiraid_v16")
+    @discord.ui.button(label="Support", style=discord.ButtonStyle.primary, emoji="🛠️", custom_id="btn_support_antiraid_v17")
     async def support(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Support")
 
-    @discord.ui.button(label="Marketing", style=discord.ButtonStyle.primary, emoji="📈", custom_id="btn_marketing_antiraid_v16")
+    @discord.ui.button(label="Marketing", style=discord.ButtonStyle.primary, emoji="📈", custom_id="btn_marketing_antiraid_v17")
     async def marketing(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Marketing")
 
-    @discord.ui.button(label="Management+", style=discord.ButtonStyle.primary, emoji="👑", custom_id="btn_management_antiraid_v16")
+    @discord.ui.button(label="Management+", style=discord.ButtonStyle.primary, emoji="👑", custom_id="btn_management_antiraid_v17")
     async def management(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Management+")
 
-    @discord.ui.button(label="Giveaway Claim", style=discord.ButtonStyle.success, emoji="🎉", custom_id="btn_giveaway_antiraid_v16")
+    @discord.ui.button(label="Giveaway Claim", style=discord.ButtonStyle.success, emoji="🎉", custom_id="btn_giveaway_antiraid_v17")
     async def giveaway(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Giveaway Claim")
 
@@ -465,7 +477,6 @@ async def on_message(message: discord.Message):
     if message.author.bot or not message.guild:
         return
 
-    # Garandeer 100% verwerking door middel van een lock
     async with MESSAGE_LOCK:
         if message.id in PROCESSED_MESSAGES:
             return
@@ -536,7 +547,6 @@ async def on_message(message: discord.Message):
     raw_content = message.content
     mention_count_in_text = raw_content.count("<@")
 
-    # Ingesteld op >= 3 (dus direct bij 3 of meer tags)
     if total_tags >= 3 or mention_count_in_text >= 3:
         try:
             await message.delete()
