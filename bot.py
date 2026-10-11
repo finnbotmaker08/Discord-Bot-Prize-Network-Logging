@@ -35,7 +35,7 @@ RAID_PING_ROLE_ID = 1551314034781851668      # Rol die getagd wordt bij een raid
 VERIFICATION_LOG_CHANNEL_ID = 1558788150086606948
 WELCOME_CHANNEL_ID = 1551311044733968627
 COUNTING_CHANNEL_ID = 1554604994961997918    # Vaste telkanaal ID
-ANTIRAID_LOG_CHANNEL_ID = 1558808381920387102  # Bijgewerkt Anti-raid logkanaal ID
+ANTIRAID_LOG_CHANNEL_ID = 1558808381920387102  # Anti-raid logkanaal ID
 
 TICKET_ROLE_MAPPING = {
     "Support": 1551318416353132544,
@@ -81,14 +81,14 @@ def has_admin_permissions(member: discord.Member) -> bool:
 
 
 # ==========================================
-# MODERATIE & BAN VIEW (Voor Verificatie & Anti-Raid)
+# MODERATIE VIEW (Met Ban, Kick & Untimeout)
 # ==========================================
 class ModerationActionView(discord.ui.View):
     def __init__(self, target_member_id: int):
         super().__init__(timeout=None)
         self.target_member_id = target_member_id
 
-    @discord.ui.button(label="Ban User", style=discord.ButtonStyle.danger, emoji="🔨", custom_id="mod_ban_btn_antiraid_v11")
+    @discord.ui.button(label="Ban User", style=discord.ButtonStyle.danger, emoji="🔨", custom_id="mod_ban_btn_v14")
     async def ban_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.ban_members:
@@ -109,7 +109,7 @@ class ModerationActionView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout bij bannen: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Kick User", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="mod_kick_btn_antiraid_v11")
+    @discord.ui.button(label="Kick User", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="mod_kick_btn_v14")
     async def kick_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.kick_members:
@@ -128,6 +128,32 @@ class ModerationActionView(discord.ui.View):
                 await interaction.followup.send("⚠️ Gebruiker niet gevonden op de server.", ephemeral=True)
         except Exception as e:
             await interaction.followup.send(f"❌ Fout bij kicken: {e}", ephemeral=True)
+
+    @discord.ui.button(label="Untimeout User", style=discord.ButtonStyle.success, emoji="🔊", custom_id="mod_untimeout_btn_v14")
+    async def untimeout_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.defer(ephemeral=True)
+        if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.moderate_members:
+            await interaction.followup.send("❌ Geen permissie om timeouts te beheren.", ephemeral=True)
+            return
+        guild = interaction.guild
+        member = guild.get_member(self.target_member_id)
+        if not member:
+            try:
+                member = await guild.fetch_member(self.target_member_id)
+            except Exception:
+                member = None
+
+        if not member:
+            await interaction.followup.send("⚠️ Gebruiker is niet langer aanwezig op de server.", ephemeral=True)
+            return
+
+        try:
+            await member.timeout(None, reason=f"Timeout opgeheven door {interaction.user}")
+            button.disabled = True
+            await interaction.message.edit(view=self)
+            await interaction.followup.send(f"🔊 Timeout van {member.mention} is succesvol opgeheven door {interaction.user.mention}.", ephemeral=False)
+        except Exception as e:
+            await interaction.followup.send(f"❌ Fout bij opheffen timeout: {e}", ephemeral=True)
 
 
 # ==========================================
@@ -204,7 +230,7 @@ class VerificationView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Verifiëren", style=discord.ButtonStyle.success, emoji="🔒", custom_id="verify_btn_antiraid_v11")
+    @discord.ui.button(label="Verifiëren", style=discord.ButtonStyle.success, emoji="🔒", custom_id="verify_btn_antiraid_v14")
     async def verify_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(VerificationModal(target_word=random.choice(VERIFICATION_WORDS)))
 
@@ -218,7 +244,7 @@ class TicketControlView(discord.ui.View):
         self.opener = opener
         self.claimed_by = None
 
-    @discord.ui.button(label="Claim Ticket", style=discord.ButtonStyle.primary, emoji="📌", custom_id="ticket_claim_antiraid_v11")
+    @discord.ui.button(label="Claim Ticket", style=discord.ButtonStyle.primary, emoji="📌", custom_id="ticket_claim_antiraid_v14")
     async def claim_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
@@ -246,7 +272,7 @@ class TicketControlView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Sluit Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket_close_antiraid_v11")
+    @discord.ui.button(label="Sluit Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket_close_antiraid_v14")
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
@@ -329,19 +355,19 @@ class TicketCreateView(discord.ui.View):
         await ticket_channel.send(content=staff_role.mention if staff_role else "", embed=embed, view=TicketControlView(opener=member))
         await interaction.followup.send(f"✅ Ticket aangemaakt: {ticket_channel.mention}", ephemeral=True)
 
-    @discord.ui.button(label="Support", style=discord.ButtonStyle.primary, emoji="🛠️", custom_id="btn_support_antiraid_v11")
+    @discord.ui.button(label="Support", style=discord.ButtonStyle.primary, emoji="🛠️", custom_id="btn_support_antiraid_v14")
     async def support(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Support")
 
-    @discord.ui.button(label="Marketing", style=discord.ButtonStyle.primary, emoji="📈", custom_id="btn_marketing_antiraid_v11")
+    @discord.ui.button(label="Marketing", style=discord.ButtonStyle.primary, emoji="📈", custom_id="btn_marketing_antiraid_v14")
     async def marketing(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Marketing")
 
-    @discord.ui.button(label="Management+", style=discord.ButtonStyle.primary, emoji="👑", custom_id="btn_management_antiraid_v11")
+    @discord.ui.button(label="Management+", style=discord.ButtonStyle.primary, emoji="👑", custom_id="btn_management_antiraid_v14")
     async def management(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Management+")
 
-    @discord.ui.button(label="Giveaway Claim", style=discord.ButtonStyle.success, emoji="🎉", custom_id="btn_giveaway_antiraid_v11")
+    @discord.ui.button(label="Giveaway Claim", style=discord.ButtonStyle.success, emoji="🎉", custom_id="btn_giveaway_antiraid_v14")
     async def giveaway(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Giveaway Claim")
 
@@ -363,36 +389,76 @@ async def on_ready():
 
 
 # ==========================================
-# TELSYSTEEM & ANTI-RAID EVENT
+# PANEEL COMMANDOS
 # ==========================================
+@bot.tree.command(name="verificatiepanelpost", description="Plaats het verificatiepaneel in dit kanaal.")
+async def verificatiepanelpost(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    if not has_admin_permissions(interaction.user):
+        await interaction.followup.send("❌ Alleen beheerders kunnen dit commando gebruiken.", ephemeral=True)
+        return
+
+    embed = discord.Embed(
+        title="🔒 Server Verificatie",
+        description="Welkom op de server! Om volledige toegang te krijgen tot de kanalen, dien je jezelf te verifiëren door op onderstaande knop te klikken en de instructies te volgen.",
+        color=discord.Color.blue()
+    )
+    embed.set_footer(text="Beveiligingssysteem • Klik op de knop om te starten.")
+    
+    try:
+        await interaction.channel.send(embed=embed, view=VerificationView())
+        await interaction.followup.send("✅ Het verificatiepaneel is succesvol geplaatst in dit kanaal.", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"❌ Fout bij plaatsen paneel: {e}", ephemeral=True)
+
+@bot.tree.command(name="ticketpanelpost", description="Plaats het ticketpaneel.")
+async def ticketpanelpost(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
+    if TICKET_COMMAND_ROLE_ID not in [r.id for r in interaction.user.roles] and not has_admin_permissions(interaction.user):
+        await interaction.followup.send("❌ Geen rechten om dit paneel te plaatsen.", ephemeral=True)
+        return
+    embed = discord.Embed(title="🎫 Ticket Systeem", description="Kies hieronder een categorie om een ticket te openen.", color=discord.Color.purple())
+    try:
+        await interaction.channel.send(embed=embed, view=TicketCreateView())
+        await interaction.followup.send("✅ Ticketpaneel geplaatst.", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"❌ Fout bij plaatsen paneel: {e}", ephemeral=True)
+
 @bot.tree.command(name="telkanalsetup", description="Plaats de uitleg voor het telsysteem in het officiële telkanaal.")
 async def telkanalsetup(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
     if not has_admin_permissions(interaction.user):
-        await interaction.response.send_message("❌ Alleen beheerders kunnen dit instellen.", ephemeral=True)
+        await interaction.followup.send("❌ Alleen beheerders kunnen dit instellen.", ephemeral=True)
         return
 
     if interaction.channel.id != COUNTING_CHANNEL_ID:
-        await interaction.response.send_message(f"❌ Dit commando kan alleen worden gebruikt in het toegewezen telkanaal (<#{COUNTING_CHANNEL_ID}>).", ephemeral=True)
+        await interaction.followup.send(f"❌ Dit commando kan alleen worden gebruikt in het toegewezen telkanaal (<#{COUNTING_CHANNEL_ID}>).", ephemeral=True)
         return
 
     embed = discord.Embed(
         title="🔢 Welkom bij het Telsysteem!",
         description="Laten we samen zo ver mogelijk komen! Hier zijn de regels:\n\n"
-                    "• Typ om de beurt het volgende getal (1, 2, 3, 4...).<br>"
-                    "• Je mag **niet** twee keer achter elkaar hetzelfde getal sturen of twee keer achter elkaar tellen.<br>"
-                    "• Bij een goed getal krijg je een ✅.<br>"
-                    "• Bij een fout getal of dubbel getal wordt de teller direct **gereset naar 1**!<br>"
-                    "• Let op: Als je echte tekst typt (chatten in plaats van getallen), krijg je een **mute van 5 minuten**!<br><br>"
+                    "• Typ om de beurt het volgende getal (1, 2, 3, 4...).\n"
+                    "• Je mag **niet** twee keer achter elkaar hetzelfde getal sturen of twee keer achter elkaar tellen.\n"
+                    "• Bij een goed getal krijg je een ✅.\n"
+                    "• Bij een fout getal of dubbel getal wordt de teller direct **gereset naar 1**!\n"
+                    "• Let op: Als je echte tekst typt (chatten in plaats van getallen), krijg je een **mute van 5 minuten**!\n\n"
                     "Veel succes!",
         color=discord.Color.from_rgb(241, 196, 15)
     )
     embed.set_footer(text="Prize Network • Telsysteem")
     
-    await interaction.channel.send(embed=embed)
-    COUNTING_DATA[COUNTING_CHANNEL_ID] = {'current': 0, 'last_user': None}
-    await interaction.response.send_message("✅ Telsysteem succesvol ingesteld in dit kanaal!", ephemeral=True)
+    try:
+        await interaction.channel.send(embed=embed)
+        COUNTING_DATA[COUNTING_CHANNEL_ID] = {'current': 0, 'last_user': None}
+        await interaction.followup.send("✅ Telsysteem succesvol ingesteld in dit kanaal!", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"❌ Fout bij instellen: {e}", ephemeral=True)
 
 
+# ==========================================
+# TELSYSTEEM & ANTI-RAID EVENT
+# ==========================================
 @bot.event
 async def on_message(message: discord.Message):
     if message.author.bot or not message.guild:
@@ -455,7 +521,7 @@ async def on_message(message: discord.Message):
         await bot.process_commands(message)
         return
 
-    # 2. ANTI-RAID & AUTO-MODERATIE (Triggert pas als het BÓVEN de 5 tags komt, dus 6 of meer)
+    # 2. ANTI-RAID & AUTO-MODERATIE (Triggert bij 3 OF MEER tags, dus >= 3)
     if "ticket" in message.channel.name.lower() or message.channel.id == COUNTING_CHANNEL_ID:
         await bot.process_commands(message)
         return
@@ -468,8 +534,8 @@ async def on_message(message: discord.Message):
     raw_content = message.content
     mention_count_in_text = raw_content.count("<@")
 
-    # Streng gezet op > 5 (dus pas vanaf 6 tags)
-    if total_tags > 5 or mention_count_in_text > 5:
+    # Ingesteld op >= 3 (dus direct bij 3 of meer tags)
+    if total_tags >= 3 or mention_count_in_text >= 3:
         try:
             await message.delete()
             await author.timeout(datetime.timedelta(hours=24), reason="Anti-Raid: Mass mentions / Tag spam")
@@ -485,7 +551,6 @@ async def on_message(message: discord.Message):
             print(f"⚠️ Anti-Raid fout bij tag-spam actie: {e}")
         return
 
-    # Controle op Links of NSFW inhoud
     has_link = "http://" in message.content or "https://" in message.content or "discord.gg/" in message.content
     has_nsfw_attachment = any(att.is_spoiler() or "nsfw" in att.filename.lower() for att in message.attachments)
 
@@ -509,33 +574,6 @@ async def on_message(message: discord.Message):
             return
 
     await bot.process_commands(message)
-
-
-# Paneel Commandos
-@bot.tree.command(name="verificatiepanelpost", description="Plaats het verificatiepaneel in dit kanaal.")
-async def verificatiepanelpost(interaction: discord.Interaction):
-    if not has_admin_permissions(interaction.user):
-        await interaction.response.send_message("❌ Alleen beheerders kunnen dit commando gebruiken.", ephemeral=True)
-        return
-
-    embed = discord.Embed(
-        title="🔒 Server Verificatie",
-        description="Welkom op de server! Om volledige toegang te krijgen tot de kanalen, dien je jezelf te verifiëren door op onderstaande knop te klikken en de instructies te volgen.",
-        color=discord.Color.blue()
-    )
-    embed.set_footer(text="Beveiligingssysteem • Klik op de knop om te starten.")
-    
-    await interaction.channel.send(embed=embed, view=VerificationView())
-    await interaction.response.send_message("✅ Het verificatiepaneel is succesvol geplaatst in dit kanaal.", ephemeral=True)
-
-@bot.tree.command(name="ticketpanelpost", description="Plaats het ticketpaneel.")
-async def ticketpanelpost(interaction: discord.Interaction):
-    if TICKET_COMMAND_ROLE_ID not in [r.id for r in interaction.user.roles] and not has_admin_permissions(interaction.user):
-        await interaction.response.send_message("❌ Geen rechten om dit paneel te plaatsen.", ephemeral=True)
-        return
-    embed = discord.Embed(title="🎫 Ticket Systeem", description="Kies hieronder een categorie om een ticket te openen.", color=discord.Color.purple())
-    await interaction.channel.send(embed=embed, view=TicketCreateView())
-    await interaction.response.send_message("✅ Ticketpaneel geplaatst.", ephemeral=True)
 
 
 # ==========================================
