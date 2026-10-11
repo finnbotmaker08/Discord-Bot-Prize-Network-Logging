@@ -31,11 +31,11 @@ UNVERIFIED_ROLE_ID = 1558771402637705316
 VERIFIED_ROLE_ID = 1553800258675409042
 TICKET_COMMAND_ROLE_ID = 1551313880494374962
 ADMIN_SPECIAL_ROLE_ID = 1558498339165700267  # Extra rol met volledige commando-rechten
-RAID_PING_ROLE_ID = 1551313880494374962      # Rol die getagd wordt bij een raid log
+RAID_PING_ROLE_ID = 1551314034781851668      # Rol die getagd wordt bij een raid log
 VERIFICATION_LOG_CHANNEL_ID = 1558788150086606948
 WELCOME_CHANNEL_ID = 1551311044733968627
-COUNTING_CHANNEL_ID = 1554604994961997918  # Vaste telkanaal ID
-ANTIRAID_LOG_CHANNEL_ID = 1553860034318958632  # Anti-raid / Leden logkanaal
+COUNTING_CHANNEL_ID = 1554604994961997918    # Vaste telkanaal ID
+ANTIRAID_LOG_CHANNEL_ID = 1558808381920387102  # Bijgewerkt Anti-raid logkanaal ID
 
 TICKET_ROLE_MAPPING = {
     "Support": 1551318416353132544,
@@ -55,8 +55,9 @@ LOG_CHANNEL_IDS = {
     "kanaal": 1553860275675992064
 }
 
-# Geheugen voor het telsysteem
+# Geheugen voor het telsysteem en anti-dubbel loggen
 COUNTING_DATA = {COUNTING_CHANNEL_ID: {'current': 0, 'last_user': None}}
+PROCESSED_MESSAGES = set()
 
 async def get_log_channel(guild: discord.Guild, name: str) -> discord.TextChannel | None:
     channel_id = LOG_CHANNEL_IDS.get(name)
@@ -87,7 +88,7 @@ class ModerationActionView(discord.ui.View):
         super().__init__(timeout=None)
         self.target_member_id = target_member_id
 
-    @discord.ui.button(label="Ban User", style=discord.ButtonStyle.danger, emoji="🔨", custom_id="mod_ban_btn_antiraid_v8")
+    @discord.ui.button(label="Ban User", style=discord.ButtonStyle.danger, emoji="🔨", custom_id="mod_ban_btn_antiraid_v11")
     async def ban_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.ban_members:
@@ -108,7 +109,7 @@ class ModerationActionView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout bij bannen: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Kick User", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="mod_kick_btn_antiraid_v8")
+    @discord.ui.button(label="Kick User", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="mod_kick_btn_antiraid_v11")
     async def kick_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.kick_members:
@@ -203,7 +204,7 @@ class VerificationView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Verifiëren", style=discord.ButtonStyle.success, emoji="🔒", custom_id="verify_btn_antiraid_v8")
+    @discord.ui.button(label="Verifiëren", style=discord.ButtonStyle.success, emoji="🔒", custom_id="verify_btn_antiraid_v11")
     async def verify_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(VerificationModal(target_word=random.choice(VERIFICATION_WORDS)))
 
@@ -217,7 +218,7 @@ class TicketControlView(discord.ui.View):
         self.opener = opener
         self.claimed_by = None
 
-    @discord.ui.button(label="Claim Ticket", style=discord.ButtonStyle.primary, emoji="📌", custom_id="ticket_claim_antiraid_v8")
+    @discord.ui.button(label="Claim Ticket", style=discord.ButtonStyle.primary, emoji="📌", custom_id="ticket_claim_antiraid_v11")
     async def claim_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
@@ -245,7 +246,7 @@ class TicketControlView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Sluit Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket_close_antiraid_v8")
+    @discord.ui.button(label="Sluit Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket_close_antiraid_v11")
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
@@ -328,19 +329,19 @@ class TicketCreateView(discord.ui.View):
         await ticket_channel.send(content=staff_role.mention if staff_role else "", embed=embed, view=TicketControlView(opener=member))
         await interaction.followup.send(f"✅ Ticket aangemaakt: {ticket_channel.mention}", ephemeral=True)
 
-    @discord.ui.button(label="Support", style=discord.ButtonStyle.primary, emoji="🛠️", custom_id="btn_support_antiraid_v8")
+    @discord.ui.button(label="Support", style=discord.ButtonStyle.primary, emoji="🛠️", custom_id="btn_support_antiraid_v11")
     async def support(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Support")
 
-    @discord.ui.button(label="Marketing", style=discord.ButtonStyle.primary, emoji="📈", custom_id="btn_marketing_antiraid_v8")
+    @discord.ui.button(label="Marketing", style=discord.ButtonStyle.primary, emoji="📈", custom_id="btn_marketing_antiraid_v11")
     async def marketing(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Marketing")
 
-    @discord.ui.button(label="Management+", style=discord.ButtonStyle.primary, emoji="👑", custom_id="btn_management_antiraid_v8")
+    @discord.ui.button(label="Management+", style=discord.ButtonStyle.primary, emoji="👑", custom_id="btn_management_antiraid_v11")
     async def management(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Management+")
 
-    @discord.ui.button(label="Giveaway Claim", style=discord.ButtonStyle.success, emoji="🎉", custom_id="btn_giveaway_antiraid_v8")
+    @discord.ui.button(label="Giveaway Claim", style=discord.ButtonStyle.success, emoji="🎉", custom_id="btn_giveaway_antiraid_v11")
     async def giveaway(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Giveaway Claim")
 
@@ -397,6 +398,13 @@ async def on_message(message: discord.Message):
     if message.author.bot or not message.guild:
         return
 
+    # Voorkom dubbele verwerking van hetzelfde bericht
+    if message.id in PROCESSED_MESSAGES:
+        return
+    PROCESSED_MESSAGES.add(message.id)
+    if len(PROCESSED_MESSAGES) > 500:
+        PROCESSED_MESSAGES.pop()
+
     # 1. TELSYSTEEM (Volledig geïsoleerd)
     if message.channel.id == COUNTING_CHANNEL_ID:
         data = COUNTING_DATA.setdefault(COUNTING_CHANNEL_ID, {'current': 0, 'last_user': None})
@@ -447,7 +455,7 @@ async def on_message(message: discord.Message):
         await bot.process_commands(message)
         return
 
-    # 2. ANTI-RAID & AUTO-MODERATIE
+    # 2. ANTI-RAID & AUTO-MODERATIE (Triggert pas als het BÓVEN de 5 tags komt, dus 6 of meer)
     if "ticket" in message.channel.name.lower() or message.channel.id == COUNTING_CHANNEL_ID:
         await bot.process_commands(message)
         return
@@ -456,12 +464,12 @@ async def on_message(message: discord.Message):
     author = message.author
     now = datetime.datetime.now(datetime.timezone.utc)
 
-    # Tel alle unieke en herhaalde mentions (inclusief rol-mentions)
     total_tags = len(message.mentions) + len(message.role_mentions)
     raw_content = message.content
     mention_count_in_text = raw_content.count("<@")
 
-    if total_tags >= 5 or mention_count_in_text >= 5:
+    # Streng gezet op > 5 (dus pas vanaf 6 tags)
+    if total_tags > 5 or mention_count_in_text > 5:
         try:
             await message.delete()
             await author.timeout(datetime.timedelta(hours=24), reason="Anti-Raid: Mass mentions / Tag spam")
@@ -472,7 +480,6 @@ async def on_message(message: discord.Message):
                 embed.add_field(name="Gebruiker", value=f"{author.mention} (`{author.id}`)", inline=False)
                 embed.add_field(name="Bericht", value=message.content or "*Geen tekst*", inline=False)
                 view = ModerationActionView(target_member_id=author.id)
-                # Stuur de rol-ping in de content van het logbericht zodat de staff getagd wordt
                 await log_chan.send(content=f"<@&{RAID_PING_ROLE_ID}>", embed=embed, view=view)
         except Exception as e:
             print(f"⚠️ Anti-Raid fout bij tag-spam actie: {e}")
@@ -496,7 +503,6 @@ async def on_message(message: discord.Message):
                     embed.add_field(name="Verzonden inhoud", value=message.content or "*Bijlage / Media*", inline=False)
                     embed.add_field(name="Kanaal", value=message.channel.mention, inline=False)
                     view = ModerationActionView(target_member_id=author.id)
-                    # Stuur de rol-ping in de content van het logbericht zodat de staff getagd wordt
                     await log_chan.send(content=f"<@&{RAID_PING_ROLE_ID}>", embed=embed, view=view)
             except Exception as e:
                 print(f"⚠️ Anti-Raid fout bij link/nsfw actie: {e}")
