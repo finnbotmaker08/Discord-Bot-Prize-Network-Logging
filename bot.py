@@ -30,9 +30,12 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 UNVERIFIED_ROLE_ID = 1558771402637705316
 VERIFIED_ROLE_ID = 1553800258675409042
 TICKET_COMMAND_ROLE_ID = 1551313880494374962
+ADMIN_SPECIAL_ROLE_ID = 1558498339165700267  # Extra rol met volledige commando-rechten
+RAID_PING_ROLE_ID = 1551313880494374962      # Rol die getagd wordt bij een raid log
 VERIFICATION_LOG_CHANNEL_ID = 1558788150086606948
 WELCOME_CHANNEL_ID = 1551311044733968627
 COUNTING_CHANNEL_ID = 1554604994961997918  # Vaste telkanaal ID
+ANTIRAID_LOG_CHANNEL_ID = 1553860034318958632  # Anti-raid / Leden logkanaal
 
 TICKET_ROLE_MAPPING = {
     "Support": 1551318416353132544,
@@ -67,19 +70,27 @@ async def get_log_channel(guild: discord.Guild, name: str) -> discord.TextChanne
             return None
     return channel
 
+def has_admin_permissions(member: discord.Member) -> bool:
+    """Controleert of een gebruiker administrator is OF de speciale beheerdersrol heeft."""
+    if member.guild_permissions.administrator:
+        return True
+    if any(role.id == ADMIN_SPECIAL_ROLE_ID for role in member.roles):
+        return True
+    return False
+
 
 # ==========================================
-# VERIFICATIE SYSTEEM
+# MODERATIE & BAN VIEW (Voor Verificatie & Anti-Raid)
 # ==========================================
-class VerificationModerationView(discord.ui.View):
+class ModerationActionView(discord.ui.View):
     def __init__(self, target_member_id: int):
         super().__init__(timeout=None)
         self.target_member_id = target_member_id
 
-    @discord.ui.button(label="Ban User", style=discord.ButtonStyle.danger, emoji="🔨", custom_id="verify_ban_btn_fixed_v3")
+    @discord.ui.button(label="Ban User", style=discord.ButtonStyle.danger, emoji="🔨", custom_id="mod_ban_btn_antiraid_v8")
     async def ban_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
-        if not interaction.user.guild_permissions.ban_members:
+        if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.ban_members:
             await interaction.followup.send("❌ Geen permissie om leden te bannen.", ephemeral=True)
             return
         guild = interaction.guild
@@ -97,10 +108,10 @@ class VerificationModerationView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout bij bannen: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Kick User", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="verify_kick_btn_fixed_v3")
+    @discord.ui.button(label="Kick User", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="mod_kick_btn_antiraid_v8")
     async def kick_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
-        if not interaction.user.guild_permissions.kick_members:
+        if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.kick_members:
             await interaction.followup.send("❌ Geen permissie om leden te kicken.", ephemeral=True)
             return
         guild = interaction.guild
@@ -118,6 +129,9 @@ class VerificationModerationView(discord.ui.View):
             await interaction.followup.send(f"❌ Fout bij kicken: {e}", ephemeral=True)
 
 
+# ==========================================
+# VERIFICATIE SYSTEEM
+# ==========================================
 class VerificationModal(discord.ui.Modal):
     def __init__(self, target_word: str):
         super().__init__(title="Server Beveiliging Verificatie")
@@ -159,7 +173,11 @@ class VerificationModal(discord.ui.Modal):
                     created_at = member.created_at
                     now = datetime.datetime.now(datetime.timezone.utc)
                     delta = now - created_at
-                    age_str = f"{delta.days // 365} jaar, {(delta.days % 365) // 30} maanden"
+                    
+                    years = delta.days // 365
+                    months = (delta.days % 365) // 30
+                    days = (delta.days % 365) % 30
+                    age_str = f"{years} jaar, {months} maanden, {days} dagen"
 
                     embed = discord.Embed(
                         title="🛡️ Lid Geverifieerd",
@@ -173,7 +191,7 @@ class VerificationModal(discord.ui.Modal):
                     embed.add_field(name="🆔 ID", value=f"`{member.id}`", inline=True)
                     embed.add_field(name="📅 Leeftijd", value=f"{created_at.strftime('%d-%m-%Y')} ({age_str})", inline=False)
                     
-                    view = VerificationModerationView(target_member_id=member.id)
+                    view = ModerationActionView(target_member_id=member.id)
                     await log_channel.send(embed=embed, view=view)
             except Exception as e:
                 await interaction.followup.send(f"❌ Fout bij toekennen rollen: {e}", ephemeral=True)
@@ -185,7 +203,7 @@ class VerificationView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Verifiëren", style=discord.ButtonStyle.success, emoji="🔒", custom_id="verify_button_persistent_fixed_v3")
+    @discord.ui.button(label="Verifiëren", style=discord.ButtonStyle.success, emoji="🔒", custom_id="verify_btn_antiraid_v8")
     async def verify_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(VerificationModal(target_word=random.choice(VERIFICATION_WORDS)))
 
@@ -199,7 +217,7 @@ class TicketControlView(discord.ui.View):
         self.opener = opener
         self.claimed_by = None
 
-    @discord.ui.button(label="Claim Ticket", style=discord.ButtonStyle.primary, emoji="📌", custom_id="ticket_claim_btn_fixed_v3")
+    @discord.ui.button(label="Claim Ticket", style=discord.ButtonStyle.primary, emoji="📌", custom_id="ticket_claim_antiraid_v8")
     async def claim_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
@@ -207,7 +225,7 @@ class TicketControlView(discord.ui.View):
         staff_member = interaction.user
 
         allowed_roles = list(TICKET_ROLE_MAPPING.values())
-        is_staff = any(r.id in allowed_roles for r in staff_member.roles) or staff_member.guild_permissions.administrator
+        is_staff = any(r.id in allowed_roles for r in staff_member.roles) or has_admin_permissions(staff_member)
         if not is_staff:
             await interaction.followup.send("❌ Alleen medewerkers kunnen dit claimen.", ephemeral=True)
             return
@@ -227,7 +245,7 @@ class TicketControlView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Sluit Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket_close_btn_fixed_v3")
+    @discord.ui.button(label="Sluit Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket_close_antiraid_v8")
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
@@ -310,19 +328,19 @@ class TicketCreateView(discord.ui.View):
         await ticket_channel.send(content=staff_role.mention if staff_role else "", embed=embed, view=TicketControlView(opener=member))
         await interaction.followup.send(f"✅ Ticket aangemaakt: {ticket_channel.mention}", ephemeral=True)
 
-    @discord.ui.button(label="Support", style=discord.ButtonStyle.primary, emoji="🛠️", custom_id="btn_support_fixed_v3")
+    @discord.ui.button(label="Support", style=discord.ButtonStyle.primary, emoji="🛠️", custom_id="btn_support_antiraid_v8")
     async def support(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Support")
 
-    @discord.ui.button(label="Marketing", style=discord.ButtonStyle.primary, emoji="📈", custom_id="btn_marketing_fixed_v3")
+    @discord.ui.button(label="Marketing", style=discord.ButtonStyle.primary, emoji="📈", custom_id="btn_marketing_antiraid_v8")
     async def marketing(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Marketing")
 
-    @discord.ui.button(label="Management+", style=discord.ButtonStyle.primary, emoji="👑", custom_id="btn_management_fixed_v3")
+    @discord.ui.button(label="Management+", style=discord.ButtonStyle.primary, emoji="👑", custom_id="btn_management_antiraid_v8")
     async def management(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Management+")
 
-    @discord.ui.button(label="Giveaway Claim", style=discord.ButtonStyle.success, emoji="🎉", custom_id="btn_giveaway_fixed_v3")
+    @discord.ui.button(label="Giveaway Claim", style=discord.ButtonStyle.success, emoji="🎉", custom_id="btn_giveaway_antiraid_v8")
     async def giveaway(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Giveaway Claim")
 
@@ -344,11 +362,11 @@ async def on_ready():
 
 
 # ==========================================
-# TELSYSTEEM (Uitsluitend in ID: 1554604994961997918)
+# TELSYSTEEM & ANTI-RAID EVENT
 # ==========================================
 @bot.tree.command(name="telkanalsetup", description="Plaats de uitleg voor het telsysteem in het officiële telkanaal.")
 async def telkanalsetup(interaction: discord.Interaction):
-    if not interaction.user.guild_permissions.administrator:
+    if not has_admin_permissions(interaction.user):
         await interaction.response.send_message("❌ Alleen beheerders kunnen dit instellen.", ephemeral=True)
         return
 
@@ -361,7 +379,7 @@ async def telkanalsetup(interaction: discord.Interaction):
         description="Laten we samen zo ver mogelijk komen! Hier zijn de regels:\n\n"
                     "• Typ om de beurt het volgende getal (1, 2, 3, 4...).<br>"
                     "• Je mag **niet** twee keer achter elkaar hetzelfde getal sturen of twee keer achter elkaar tellen.<br>"
-                    "• Bij een goed getal krijg je een **✅**.<br>"
+                    "• Bij een goed getal krijg je een ✅.<br>"
                     "• Bij een fout getal of dubbel getal wordt de teller direct **gereset naar 1**!<br>"
                     "• Let op: Als je echte tekst typt (chatten in plaats van getallen), krijg je een **mute van 5 minuten**!<br><br>"
                     "Veel succes!",
@@ -376,17 +394,16 @@ async def telkanalsetup(interaction: discord.Interaction):
 
 @bot.event
 async def on_message(message: discord.Message):
-    if message.author.bot:
+    if message.author.bot or not message.guild:
         return
 
+    # 1. TELSYSTEEM (Volledig geïsoleerd)
     if message.channel.id == COUNTING_CHANNEL_ID:
         data = COUNTING_DATA.setdefault(COUNTING_CHANNEL_ID, {'current': 0, 'last_user': None})
         
-        # Controleer of het bericht een geldig getal is
         try:
             number = int(message.content.strip())
         except ValueError:
-            # Er is gechat (tekst getypt) in plaats van een getal -> Mute van 5 minuten!
             data['current'] = 0
             data['last_user'] = None
             try:
@@ -400,7 +417,6 @@ async def on_message(message: discord.Message):
 
         expected_number = data['current'] + 1
 
-        # Controleer of de gebruiker twee keer achter elkaar telt
         if message.author.id == data['last_user']:
             data['current'] = 0
             data['last_user'] = None
@@ -412,7 +428,6 @@ async def on_message(message: discord.Message):
             await bot.process_commands(message)
             return
 
-        # Controleer of het getal klopt
         if number == expected_number:
             data['current'] = number
             data['last_user'] = message.author.id
@@ -429,13 +444,71 @@ async def on_message(message: discord.Message):
             except Exception:
                 pass
 
+        await bot.process_commands(message)
+        return
+
+    # 2. ANTI-RAID & AUTO-MODERATIE
+    if "ticket" in message.channel.name.lower() or message.channel.id == COUNTING_CHANNEL_ID:
+        await bot.process_commands(message)
+        return
+
+    guild = message.guild
+    author = message.author
+    now = datetime.datetime.now(datetime.timezone.utc)
+
+    # Tel alle unieke en herhaalde mentions (inclusief rol-mentions)
+    total_tags = len(message.mentions) + len(message.role_mentions)
+    raw_content = message.content
+    mention_count_in_text = raw_content.count("<@")
+
+    if total_tags >= 5 or mention_count_in_text >= 5:
+        try:
+            await message.delete()
+            await author.timeout(datetime.timedelta(hours=24), reason="Anti-Raid: Mass mentions / Tag spam")
+            
+            log_chan = guild.get_channel(ANTIRAID_LOG_CHANNEL_ID)
+            if log_chan:
+                embed = discord.Embed(title="🚨 Anti-Raid Triggered (Tag Spam)", color=discord.Color.red(), timestamp=now)
+                embed.add_field(name="Gebruiker", value=f"{author.mention} (`{author.id}`)", inline=False)
+                embed.add_field(name="Bericht", value=message.content or "*Geen tekst*", inline=False)
+                view = ModerationActionView(target_member_id=author.id)
+                # Stuur de rol-ping in de content van het logbericht zodat de staff getagd wordt
+                await log_chan.send(content=f"<@&{RAID_PING_ROLE_ID}>", embed=embed, view=view)
+        except Exception as e:
+            print(f"⚠️ Anti-Raid fout bij tag-spam actie: {e}")
+        return
+
+    # Controle op Links of NSFW inhoud
+    has_link = "http://" in message.content or "https://" in message.content or "discord.gg/" in message.content
+    has_nsfw_attachment = any(att.is_spoiler() or "nsfw" in att.filename.lower() for att in message.attachments)
+
+    if has_link or has_nsfw_attachment:
+        is_mod = has_admin_permissions(author) or author.guild_permissions.manage_messages
+        if not is_mod:
+            try:
+                await message.delete()
+                await author.timeout(datetime.timedelta(hours=24), reason="Anti-Raid: Ongewenste link of NSFW inhoud gedetecteerd")
+                
+                log_chan = guild.get_channel(ANTIRAID_LOG_CHANNEL_ID)
+                if log_chan:
+                    embed = discord.Embed(title="🚨 Anti-Raid Triggered (Link / NSFW)", color=discord.Color.red(), timestamp=now)
+                    embed.add_field(name="Gebruiker", value=f"{author.mention} (`{author.id}`)", inline=False)
+                    embed.add_field(name="Verzonden inhoud", value=message.content or "*Bijlage / Media*", inline=False)
+                    embed.add_field(name="Kanaal", value=message.channel.mention, inline=False)
+                    view = ModerationActionView(target_member_id=author.id)
+                    # Stuur de rol-ping in de content van het logbericht zodat de staff getagd wordt
+                    await log_chan.send(content=f"<@&{RAID_PING_ROLE_ID}>", embed=embed, view=view)
+            except Exception as e:
+                print(f"⚠️ Anti-Raid fout bij link/nsfw actie: {e}")
+            return
+
     await bot.process_commands(message)
 
 
 # Paneel Commandos
 @bot.tree.command(name="verificatiepanelpost", description="Plaats het verificatiepaneel in dit kanaal.")
 async def verificatiepanelpost(interaction: discord.Interaction):
-    if not interaction.user.guild_permissions.administrator:
+    if not has_admin_permissions(interaction.user):
         await interaction.response.send_message("❌ Alleen beheerders kunnen dit commando gebruiken.", ephemeral=True)
         return
 
@@ -451,7 +524,7 @@ async def verificatiepanelpost(interaction: discord.Interaction):
 
 @bot.tree.command(name="ticketpanelpost", description="Plaats het ticketpaneel.")
 async def ticketpanelpost(interaction: discord.Interaction):
-    if TICKET_COMMAND_ROLE_ID not in [r.id for r in interaction.user.roles] and not interaction.user.guild_permissions.administrator:
+    if TICKET_COMMAND_ROLE_ID not in [r.id for r in interaction.user.roles] and not has_admin_permissions(interaction.user):
         await interaction.response.send_message("❌ Geen rechten om dit paneel te plaatsen.", ephemeral=True)
         return
     embed = discord.Embed(title="🎫 Ticket Systeem", description="Kies hieronder een categorie om een ticket te openen.", color=discord.Color.purple())
@@ -472,7 +545,6 @@ async def on_member_join(member: discord.Member):
         except Exception:
             pass
 
-    # Welkomstbericht
     welcome_channel = guild.get_channel(WELCOME_CHANNEL_ID)
     if not welcome_channel:
         try:
@@ -496,7 +568,6 @@ async def on_member_join(member: discord.Member):
         
         await welcome_channel.send(embed=embed)
 
-    # Leden log
     channel = await get_log_channel(guild, "leden")
     if channel:
         await channel.send(embed=discord.Embed(title="📥 Lid Binnengekomen", description=f"{member.mention} is gejoined.", color=discord.Color.green()))
