@@ -96,7 +96,7 @@ class ModerationActionView(discord.ui.View):
         super().__init__(timeout=None)
         self.target_member_id = target_member_id
 
-    @discord.ui.button(label="Ban User", style=discord.ButtonStyle.danger, emoji="🔨", custom_id="mod_ban_btn_v21")
+    @discord.ui.button(label="Ban User", style=discord.ButtonStyle.danger, emoji="🔨", custom_id="mod_ban_btn_v22")
     async def ban_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.ban_members:
@@ -117,7 +117,7 @@ class ModerationActionView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout bij bannen: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Kick User", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="mod_kick_btn_v21")
+    @discord.ui.button(label="Kick User", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="mod_kick_btn_v22")
     async def kick_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.kick_members:
@@ -137,7 +137,7 @@ class ModerationActionView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout bij kicken: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Untimeout User", style=discord.ButtonStyle.success, emoji="🔊", custom_id="mod_untimeout_btn_v21")
+    @discord.ui.button(label="Untimeout User", style=discord.ButtonStyle.success, emoji="🔊", custom_id="mod_untimeout_btn_v22")
     async def untimeout_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.moderate_members:
@@ -238,7 +238,7 @@ class VerificationView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Verifiëren", style=discord.ButtonStyle.success, emoji="🔒", custom_id="verify_btn_v21")
+    @discord.ui.button(label="Verifiëren", style=discord.ButtonStyle.success, emoji="🔒", custom_id="verify_btn_v22")
     async def verify_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(VerificationModal(target_word=random.choice(VERIFICATION_WORDS)))
 
@@ -252,7 +252,7 @@ class TicketControlView(discord.ui.View):
         self.opener = opener
         self.claimed_by = None
 
-    @discord.ui.button(label="Claim Ticket", style=discord.ButtonStyle.primary, emoji="📌", custom_id="ticket_claim_v21")
+    @discord.ui.button(label="Claim Ticket", style=discord.ButtonStyle.primary, emoji="📌", custom_id="ticket_claim_v22")
     async def claim_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
@@ -279,7 +279,7 @@ class TicketControlView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Sluit Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket_close_v21")
+    @discord.ui.button(label="Sluit Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket_close_v22")
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         closer = interaction.user
@@ -367,19 +367,19 @@ class TicketCreateView(discord.ui.View):
         await ticket_channel.send(content=staff_role.mention if staff_role else "", embed=embed, view=TicketControlView(opener=member))
         await interaction.followup.send(f"✅ Ticket aangemaakt: {ticket_channel.mention}", ephemeral=True)
 
-    @discord.ui.button(label="Support", style=discord.ButtonStyle.primary, emoji="🛠️", custom_id="btn_support_v21")
+    @discord.ui.button(label="Support", style=discord.ButtonStyle.primary, emoji="🛠️", custom_id="btn_support_v22")
     async def support(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Support")
 
-    @discord.ui.button(label="Marketing", style=discord.ButtonStyle.primary, emoji="📈", custom_id="btn_marketing_v21")
+    @discord.ui.button(label="Marketing", style=discord.ButtonStyle.primary, emoji="📈", custom_id="btn_marketing_v22")
     async def marketing(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Marketing")
 
-    @discord.ui.button(label="Management+", style=discord.ButtonStyle.primary, emoji="👑", custom_id="btn_management_v21")
+    @discord.ui.button(label="Management+", style=discord.ButtonStyle.primary, emoji="👑", custom_id="btn_management_v22")
     async def management(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Management+")
 
-    @discord.ui.button(label="Giveaway Claim", style=discord.ButtonStyle.success, emoji="🎉", custom_id="btn_giveaway_v21")
+    @discord.ui.button(label="Giveaway Claim", style=discord.ButtonStyle.success, emoji="🎉", custom_id="btn_giveaway_v22")
     async def giveaway(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Giveaway Claim")
 
@@ -524,7 +524,7 @@ async def on_message(message: discord.Message):
         if len(PROCESSED_MESSAGES) > 500:
             PROCESSED_MESSAGES.pop()
 
-    # 1. TELSYSTEEM (Volledig geïsoleerd)
+    # TELSYSTEEM (Volledig geïsoleerd)
     if message.channel.id == COUNTING_CHANNEL_ID:
         data = COUNTING_DATA.setdefault(COUNTING_CHANNEL_ID, {'current': 0, 'last_user': None})
         
@@ -578,8 +578,87 @@ async def on_message(message: discord.Message):
 
 
 # ==========================================
-# EVENT LISTENERS (Logging & Welkom)
+# SYSTEM LOGGING EVENTS
 # ==========================================
+
+# 1. BERICHTEN LOGS (Verwijderd & Bewerkt)
+@bot.event
+async def on_message_delete(message: discord.Message):
+    if message.author.bot or not message.guild:
+        return
+    channel = await get_log_channel(message.guild, "berichten")
+    if channel:
+        embed = discord.Embed(title="🗑️ Bericht Verwijderd", color=discord.Color.red(), timestamp=datetime.datetime.now(datetime.timezone.utc))
+        embed.add_field(name="Auteur", value=f"{message.author.mention} (`{message.author.id}`)", inline=True)
+        embed.add_field(name="Kanaal", value=message.channel.mention, inline=True)
+        embed.add_field(name="Inhoud", value=message.content or "*Geen tekst / Bijlage*", inline=False)
+        await channel.send(embed=embed)
+
+@bot.event
+async def on_message_edit(before: discord.Message, after: discord.Message):
+    if before.author.bot or not before.guild or before.content == after.content:
+        return
+    channel = await get_log_channel(before.guild, "berichten")
+    if channel:
+        embed = discord.Embed(title="✏️ Bericht Bewerkt", color=discord.Color.orange(), timestamp=datetime.datetime.now(datetime.timezone.utc))
+        embed.add_field(name="Auteur", value=f"{before.author.mention} (`{before.author.id}`)", inline=True)
+        embed.add_field(name="Kanaal", value=before.channel.mention, inline=True)
+        embed.add_field(name="Voor", value=before.content or "*Geen tekst*", inline=False)
+        embed.add_field(name="Na", value=after.content or "*Geen tekst*", inline=False)
+        await channel.send(embed=embed)
+
+# 2. CALL LOGS (Spraakkanalen)
+@bot.event
+async def on_voice_state_update(member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+    if member.bot:
+        return
+    channel = await get_log_channel(member.guild, "call")
+    if not channel:
+        return
+
+    now = datetime.datetime.now(datetime.timezone.utc)
+    if before.channel is None and after.channel is not None:
+        embed = discord.Embed(title="🔊 Spraakkanaal Gejoined", description=f"{member.mention} is verbonden met {after.channel.mention}", color=discord.Color.green(), timestamp=now)
+        await channel.send(embed=embed)
+    elif before.channel is not None and after.channel is None:
+        embed = discord.Embed(title="🔇 Spraakkanaal Verlaten", description=f"{member.mention} heeft {before.channel.mention} verlaten", color=discord.Color.red(), timestamp=now)
+        await channel.send(embed=embed)
+    elif before.channel != after.channel:
+        embed = discord.Embed(title="🔀 Spraakkanaal Verplaatst", description=f"{member.mention} is verplaatst van {before.channel.mention} naar {after.channel.mention}", color=discord.Color.blue(), timestamp=now)
+        await channel.send(embed=embed)
+
+# 3. KANAAL LOGS (Aangemaakt & Verwijderd)
+@bot.event
+async def on_guild_channel_create(channel: discord.abc.GuildChannel):
+    log_chan = await get_log_channel(channel.guild, "kanaal")
+    if log_chan:
+        embed = discord.Embed(title="➕ Kanaal Aangemaakt", description=f"Kanaal {channel.mention} (`{channel.name}`) is aangemaakt.", color=discord.Color.green(), timestamp=datetime.datetime.now(datetime.timezone.utc))
+        await log_chan.send(embed=embed)
+
+@bot.event
+async def on_guild_channel_delete(channel: discord.abc.GuildChannel):
+    log_chan = await get_log_channel(channel.guild, "kanaal")
+    if log_chan:
+        embed = discord.Embed(title="➖ Kanaal Verwijderd", description=f"Kanaal `{channel.name}` is verwijderd.", color=discord.Color.red(), timestamp=datetime.datetime.now(datetime.timezone.utc))
+        await log_chan.send(embed=embed)
+
+# 4. ROL LOGS (Gewijzigd)
+@bot.event
+async def on_member_update(before: discord.Member, after: discord.Member):
+    if before.roles != after.roles:
+        channel = await get_log_channel(before.guild, "role")
+        if channel:
+            added_roles = [r.mention for r in after.roles if r not in before.roles]
+            removed_roles = [r.mention for r in before.roles if r not in after.roles]
+            
+            embed = discord.Embed(title="🛡️ Rollen Gewijzigd", description=f"Rollen aangepast voor {after.mention}", color=discord.Color.blue(), timestamp=datetime.datetime.now(datetime.timezone.utc))
+            if added_roles:
+                embed.add_field(name="Toegevoegd", value=", ".join(added_roles), inline=False)
+            if removed_roles:
+                embed.add_field(name="Verwijderd", value=", ".join(removed_roles), inline=False)
+            await channel.send(embed=embed)
+
+# 5. LEDEN LOGS (Join & Leave)
 @bot.event
 async def on_member_join(member: discord.Member):
     guild = member.guild
@@ -615,12 +694,12 @@ async def on_member_join(member: discord.Member):
 
     channel = await get_log_channel(guild, "leden")
     if channel:
-        await channel.send(embed=discord.Embed(title="📥 Lid Binnengekomen", description=f"{member.mention} is gejoined.", color=discord.Color.green()))
+        await channel.send(embed=discord.Embed(title="📥 Lid Binnengekomen", description=f"{member.mention} is gejoined.", color=discord.Color.green(), timestamp=datetime.datetime.now(datetime.timezone.utc)))
 
 @bot.event
 async def on_member_remove(member: discord.Member):
     channel = await get_log_channel(member.guild, "leden")
     if channel:
-        await channel.send(embed=discord.Embed(title="📤 Lid Verlaten", description=f"{member.mention} heeft verlaten.", color=discord.Color.red()))
+        await channel.send(embed=discord.Embed(title="📤 Lid Verlaten", description=f"{member.mention} heeft de server verlaten.", color=discord.Color.red(), timestamp=datetime.datetime.now(datetime.timezone.utc)))
 
 bot.run(TOKEN)
