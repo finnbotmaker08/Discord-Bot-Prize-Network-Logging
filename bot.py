@@ -46,6 +46,7 @@ TICKET_ROLE_MAPPING = {
 
 VERIFICATION_WORDS = ["VERIFIED", "SECURITY", "DISCORD", "ACCESS", "PROTECT", "WELCOME"]
 
+# Logkanalen Mapping
 LOG_CHANNEL_IDS = {
     "tickets": 1553859073567494334,
     "leden": 1553860034318958632,
@@ -61,6 +62,7 @@ PROCESSED_MESSAGES = set()
 MESSAGE_LOCK = asyncio.Lock()
 
 async def get_log_channel(guild: discord.Guild, name: str) -> discord.TextChannel | None:
+    """Haalt het opgevraagde logkanaal op via de cache of Discord API."""
     channel_id = LOG_CHANNEL_IDS.get(name)
     if not channel_id:
         return None
@@ -96,7 +98,7 @@ class ModerationActionView(discord.ui.View):
         super().__init__(timeout=None)
         self.target_member_id = target_member_id
 
-    @discord.ui.button(label="Ban User", style=discord.ButtonStyle.danger, emoji="🔨", custom_id="mod_ban_btn_v18")
+    @discord.ui.button(label="Ban User", style=discord.ButtonStyle.danger, emoji="🔨", custom_id="mod_ban_btn_v19")
     async def ban_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.ban_members:
@@ -117,7 +119,7 @@ class ModerationActionView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout bij bannen: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Kick User", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="mod_kick_btn_v18")
+    @discord.ui.button(label="Kick User", style=discord.ButtonStyle.secondary, emoji="🛡️", custom_id="mod_kick_btn_v19")
     async def kick_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.kick_members:
@@ -137,7 +139,7 @@ class ModerationActionView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout bij kicken: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Untimeout User", style=discord.ButtonStyle.success, emoji="🔊", custom_id="mod_untimeout_btn_v18")
+    @discord.ui.button(label="Untimeout User", style=discord.ButtonStyle.success, emoji="🔊", custom_id="mod_untimeout_btn_v19")
     async def untimeout_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         if not has_admin_permissions(interaction.user) and not interaction.user.guild_permissions.moderate_members:
@@ -238,7 +240,7 @@ class VerificationView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label="Verifiëren", style=discord.ButtonStyle.success, emoji="🔒", custom_id="verify_btn_antiraid_v18")
+    @discord.ui.button(label="Verifiëren", style=discord.ButtonStyle.success, emoji="🔒", custom_id="verify_btn_antiraid_v19")
     async def verify_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(VerificationModal(target_word=random.choice(VERIFICATION_WORDS)))
 
@@ -252,7 +254,7 @@ class TicketControlView(discord.ui.View):
         self.opener = opener
         self.claimed_by = None
 
-    @discord.ui.button(label="Claim Ticket", style=discord.ButtonStyle.primary, emoji="📌", custom_id="ticket_claim_antiraid_v18")
+    @discord.ui.button(label="Claim Ticket", style=discord.ButtonStyle.primary, emoji="📌", custom_id="ticket_claim_antiraid_v19")
     async def claim_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
@@ -279,7 +281,7 @@ class TicketControlView(discord.ui.View):
         except Exception as e:
             await interaction.followup.send(f"❌ Fout: {e}", ephemeral=True)
 
-    @discord.ui.button(label="Sluit Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket_close_antiraid_v18")
+    @discord.ui.button(label="Sluit Ticket", style=discord.ButtonStyle.danger, emoji="🔒", custom_id="ticket_close_antiraid_v19")
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         closer = interaction.user
@@ -367,19 +369,19 @@ class TicketCreateView(discord.ui.View):
         await ticket_channel.send(content=staff_role.mention if staff_role else "", embed=embed, view=TicketControlView(opener=member))
         await interaction.followup.send(f"✅ Ticket aangemaakt: {ticket_channel.mention}", ephemeral=True)
 
-    @discord.ui.button(label="Support", style=discord.ButtonStyle.primary, emoji="🛠️", custom_id="btn_support_antiraid_v18")
+    @discord.ui.button(label="Support", style=discord.ButtonStyle.primary, emoji="🛠️", custom_id="btn_support_antiraid_v19")
     async def support(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Support")
 
-    @discord.ui.button(label="Marketing", style=discord.ButtonStyle.primary, emoji="📈", custom_id="btn_marketing_antiraid_v18")
+    @discord.ui.button(label="Marketing", style=discord.ButtonStyle.primary, emoji="📈", custom_id="btn_marketing_antiraid_v19")
     async def marketing(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Marketing")
 
-    @discord.ui.button(label="Management+", style=discord.ButtonStyle.primary, emoji="👑", custom_id="btn_management_antiraid_v18")
+    @discord.ui.button(label="Management+", style=discord.ButtonStyle.primary, emoji="👑", custom_id="btn_management_antiraid_v19")
     async def management(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Management+")
 
-    @discord.ui.button(label="Giveaway Claim", style=discord.ButtonStyle.success, emoji="🎉", custom_id="btn_giveaway_antiraid_v18")
+    @discord.ui.button(label="Giveaway Claim", style=discord.ButtonStyle.success, emoji="🎉", custom_id="btn_giveaway_antiraid_v19")
     async def giveaway(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.create_ticket(interaction, "Giveaway Claim")
 
@@ -398,6 +400,51 @@ async def on_ready():
         print("🔗 Slash-commando's gesynchroniseerd.")
     except Exception as e:
         print(f"❌ Fout bij sync: {e}")
+
+
+# ==========================================
+# COMMANDO: GIVAWAY REROLL
+# ==========================================
+@bot.tree.command(name="reroll", description="Herloting voor een giveaway door willekeurige nieuwe winnaars te kiezen.")
+@app_commands.describe(message_id="Het Bericht-ID van de giveaway", aantal="Aantal nieuwe winnaars dat getrokken moet worden")
+async def reroll(interaction: discord.Interaction, message_id: str, aantal: int = 1):
+    await interaction.response.defer(ephemeral=True)
+    if not has_admin_permissions(interaction.user):
+        await interaction.followup.send("❌ Alleen beheerders kunnen het Reroll commando gebruiken.", ephemeral=True)
+        return
+
+    try:
+        target_message_id = int(message_id.strip())
+        target_message = await interaction.channel.fetch_message(target_message_id)
+    except Exception:
+        await interaction.followup.send("❌ Bericht niet gevonden in dit kanaal. Zorg dat je het commando in hetzelfde kanaal gebruikt als het giveaway-bericht.", ephemeral=True)
+        return
+
+    users = set()
+    for reaction in target_message.reactions:
+        async for user in reaction.users():
+            if not user.bot:
+                users.add(user)
+
+    if not users:
+        await interaction.followup.send("❌ Geen geldige inzendingen (of reacties) gevonden op dat bericht.", ephemeral=True)
+        return
+
+    users_list = list(users)
+    winners_count = min(aantal, len(users_list))
+    winners = random.sample(users_list, winners_count)
+
+    winners_mentions = ", ".join([w.mention for w in winners])
+    
+    # Stuur het resultaat in het kanaal
+    embed = discord.Embed(
+        title="🎉 Giveaway Reroll Resultaat!",
+        description=f"Gefeliciteerd {winners_mentions}! Je bent de nieuwe winnaar van de giveaway!",
+        color=discord.Color.gold(),
+        timestamp=datetime.datetime.now(datetime.timezone.utc)
+    )
+    await interaction.channel.send(content=f"🎉 {winners_mentions}", embed=embed)
+    await interaction.followup.send(f"✅ Succesvol {winners_count} nieuwe winnaar(s) getrokken!", ephemeral=True)
 
 
 # ==========================================
